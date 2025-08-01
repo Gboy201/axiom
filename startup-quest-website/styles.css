@@ -536,12 +536,6 @@ body.form-page {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    #mobile-controls {
-        display: block;
-    }
-    
-
-    
     .room-content {
         width: 95%;
         height: 85%;

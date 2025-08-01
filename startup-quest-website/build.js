@@ -24,10 +24,16 @@ const itemsToCopy = [
     'dragon.gif',
     'map.png',
     'map V1.png',
+    'map V2.png',
+    'mapV3.png',
     'Component 1.png',
     'Component 2.png',
+    'Component V1.png',
     'crystalCave.png',
     'ycf.png',
+    'orc.png',
+    'scheduale.png',
+    'schedualeimg.png',
     'block-craft-font'
 ];
 

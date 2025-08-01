@@ -1,32 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "public" }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/submit-application",
-      "dest": "/api/submit-application.js",
-      "methods": ["POST"]
-    },
-    {
-      "src": "/api/submit-contact",
-      "dest": "/api/submit-contact.js",
-      "methods": ["POST"]
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
   "functions": {
     "api/submit-application.js": {
       "maxDuration": 30

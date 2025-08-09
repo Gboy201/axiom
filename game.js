@@ -10,6 +10,14 @@ class StartupQuest {
         this.roomModal = document.getElementById('room-modal');
         this.mobileControls = document.getElementById('mobile-controls');
         
+        // Mobile debug elements
+        this.mobileDebug = document.getElementById('mobile-debug');
+        this.debugPlayer = document.getElementById('debug-player');
+        this.debugNearest = document.getElementById('debug-nearest');
+        this.debugDistance = document.getElementById('debug-distance');
+        this.debugStatus = document.getElementById('debug-status');
+        this.debugProgress = document.getElementById('debug-progress');
+        
         // Static frame capture
         this.staticFrameCaptured = false;
         
@@ -69,6 +77,7 @@ class StartupQuest {
         // Input handling
         this.keys = {};
         this.touchDirection = null;
+        this.firstKeyPressed = false; // Debug flag for first load issues
         
         // Game state
         this.currentRoom = null;
@@ -77,11 +86,13 @@ class StartupQuest {
         
         // Initialize
         this.setupCanvas();
-        this.setupEventListeners();
         this.createRoomData();
         
+        // Set up event listeners immediately since we're using window.addEventListener('load')
+        this.setupEventListeners();
+        
         // IMMEDIATE START - Set flags but let portal detection happen when map loads
-        console.log(`🚀 STARTING GAME IMMEDIATELY - Initializing core systems!`);
+        // console.log(`🚀 STARTING GAME IMMEDIATELY - Initializing core systems!`);
         
         // Set flags for immediate game start
         this.imageLoaded = true;
@@ -96,16 +107,35 @@ class StartupQuest {
         this.loadPortalMap();
         this.loadPortalImage();
         
-        // Start immediately
+        // Add page show listener to reset opacity when returning via back button
+        window.addEventListener('pageshow', (event) => {
+            // This fires when page is shown, including back button navigation
+            if (event.persisted) {
+                // Page was loaded from cache (back button used)
+                this.resetOpacityAfterReturn();
+            }
+        });
+        
+        // Also add focus listener as backup for other navigation cases
+        window.addEventListener('focus', () => {
+            this.resetOpacityAfterReturn();
+        });
+        
+        // Start the game after a brief delay to ensure everything is ready
         setTimeout(() => {
             this.startGame();
-        }, 1000);
+        }, 500);
     }
     
     setupCanvas() {
         const updateCanvasSize = () => {
             this.canvas.width = window.innerWidth;
             this.canvas.height = window.innerHeight;
+            
+            // Debug canvas positioning
+                    // console.log(`🔧 Canvas size: ${this.canvas.width}x${this.canvas.height}`);
+        // console.log(`🔧 Window size: ${window.innerWidth}x${window.innerHeight}`);
+        // console.log(`🔧 Canvas offset: ${this.canvas.offsetTop}px from top`);
         };
         
         updateCanvasSize();
@@ -113,6 +143,19 @@ class StartupQuest {
         
         // Prevent context menu on right click
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Prevent mobile scrolling and zooming on canvas
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        this.canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
         
         // Calculate scale to fit image nicely on screen
         this.updateScale();
@@ -133,20 +176,23 @@ class StartupQuest {
             this.mapWidth = this.backgroundImage.naturalWidth;
             this.mapHeight = this.backgroundImage.naturalHeight;
             
+            // CRITICAL: Recalculate collision scaling factors with new map dimensions
+            this.recalculateCollisionScaling();
+            
             // Update player starting position to center of your image
             this.player.x = this.mapWidth / 2;
             this.player.y = this.mapHeight / 2;
             
 
             
-            console.log(`✅ Background image loaded during gameplay`);
+            // console.log(`✅ Background image loaded during gameplay`);
         };
         
         this.backgroundImage.onerror = () => {
-            console.log("Could not load your image, creating fallback...");
+            // console.log("Could not load your image, creating fallback...");
             // Fallback to programmatic background if image fails to load
             this.createBeautifulBackground();
-            console.log(`✅ Using fallback background`);
+            // console.log(`✅ Using fallback background`);
         };
         
         // Load your actual beautiful fantasy image file
@@ -160,12 +206,12 @@ class StartupQuest {
             
             // Capture first frame for static version
             this.captureStaticFrame();
-            console.log(`✅ Dragon sprite loaded during gameplay`);
+            // console.log(`✅ Dragon sprite loaded during gameplay`);
         };
         
         this.characterSprite.onerror = () => {
-            console.log("Could not load dragon.gif character sprite");
-            console.log(`⚠️ Game will continue without dragon sprite`);
+            // console.log("Could not load dragon.gif character sprite");
+            // console.log(`⚠️ Game will continue without dragon sprite`);
         };
         
         this.characterSprite.src = 'dragon.gif';
@@ -181,6 +227,25 @@ class StartupQuest {
         }, 100);
     }
     
+    recalculateCollisionScaling() {
+        // Only recalculate if collision canvas exists
+        if (this.collisionCanvas && this.collisionMapLoaded) {
+            // Recalculate scale ratios for coordinate conversion
+            this.collisionScaleX = this.collisionCanvas.width / this.mapWidth;
+            this.collisionScaleY = this.collisionCanvas.height / this.mapHeight;
+            
+                    // console.log(`🔧 RECALCULATED Collision coordinate conversion:`);
+        // console.log(`   Scale X: ${this.collisionScaleX.toFixed(3)} (${this.collisionCanvas.width}/${this.mapWidth})`);
+        // console.log(`   Scale Y: ${this.collisionScaleY.toFixed(3)} (${this.collisionCanvas.height}/${this.mapHeight})`);
+            
+            if (this.collisionScaleX !== 1 || this.collisionScaleY !== 1) {
+                // console.log(`📐 Different dimensions - scaling coordinates properly`);
+            } else {
+                // console.log(`✅ Same dimensions - direct coordinate mapping`);
+            }
+        }
+    }
+    
     loadCollisionMap() {
         this.collisionMap.onload = () => {
             // Create a canvas to read pixel data from the collision map
@@ -193,31 +258,20 @@ class StartupQuest {
             this.collisionCtx.drawImage(this.collisionMap, 0, 0);
             this.collisionMapLoaded = true;
             
-            console.log(`🗺️ Collision map loaded successfully!`);
-            console.log(`📏 Collision map (Component 1.png): ${this.collisionCanvas.width}x${this.collisionCanvas.height}`);
-            console.log(`📏 Game map (map.png): ${this.mapWidth}x${this.mapHeight}`);
-            console.log(`🎮 Player starting position: (${this.player.x}, ${this.player.y})`);
+            // console.log(`🗺️ Collision map loaded successfully!`);
+            // console.log(`📏 Collision map (Component 1.png): ${this.collisionCanvas.width}x${this.collisionCanvas.height}`);
+            // console.log(`📏 Game map (map.png): ${this.mapWidth}x${this.mapHeight}`);
+            // console.log(`🎮 Player starting position: (${this.player.x}, ${this.player.y})`);
             
-            // Calculate scale ratios for coordinate conversion
-            this.collisionScaleX = this.collisionCanvas.width / this.mapWidth;
-            this.collisionScaleY = this.collisionCanvas.height / this.mapHeight;
+            // Calculate initial scale ratios for coordinate conversion
+            this.recalculateCollisionScaling();
             
-            console.log(`🔧 Collision coordinate conversion:`);
-            console.log(`   Scale X: ${this.collisionScaleX.toFixed(3)} (${this.collisionCanvas.width}/${this.mapWidth})`);
-            console.log(`   Scale Y: ${this.collisionScaleY.toFixed(3)} (${this.collisionCanvas.height}/${this.mapHeight})`);
-            
-            if (this.collisionScaleX !== 1 || this.collisionScaleY !== 1) {
-                console.log(`📐 Different dimensions - will scale coordinates properly`);
-            } else {
-                console.log(`✅ Same dimensions - direct coordinate mapping`);
-            }
-            
-            console.log(`✅ Collision map loaded during gameplay`);
+            // console.log(`✅ Collision map loaded during gameplay`);
         };
         
         this.collisionMap.onerror = () => {
-            console.log("❌ Could not load Component 1.png collision map");
-            console.log(`⚠️ Game will continue without collision detection`);
+            // console.log("❌ Could not load Component 1.png collision map");
+            // console.log(`⚠️ Game will continue without collision detection`);
         };
         
         this.collisionMap.src = 'Component 1.png';
@@ -235,162 +289,57 @@ class StartupQuest {
             this.portalCtx.drawImage(this.portalMap, 0, 0);
             this.portalMapLoaded = true;
             
-            console.log(`🌀 Portal map loaded successfully!`);
-            console.log(`📏 Portal map (Component 2.png): ${this.portalCanvas.width}x${this.portalCanvas.height}`);
+            // console.log(`🌀 Portal map loaded successfully!`);
+            // console.log(`📏 Portal map (Component 2.png): ${this.portalCanvas.width}x${this.portalCanvas.height}`);
             
             // Calculate scale ratios for coordinate conversion
             this.portalScaleX = this.portalCanvas.width / this.mapWidth;
             this.portalScaleY = this.portalCanvas.height / this.mapHeight;
             
-            console.log(`🔧 Portal coordinate conversion:`);
-            console.log(`   Scale X: ${this.portalScaleX.toFixed(3)} (${this.portalCanvas.width}/${this.mapWidth})`);
-            console.log(`   Scale Y: ${this.portalScaleY.toFixed(3)} (${this.portalCanvas.height}/${this.mapHeight})`);
+            // console.log(`🔧 Portal coordinate conversion:`);
+            // console.log(`   Scale X: ${this.portalScaleX.toFixed(3)} (${this.portalCanvas.width}/${this.mapWidth})`);
+            // console.log(`   Scale Y: ${this.portalScaleY.toFixed(3)} (${this.portalCanvas.height}/${this.mapHeight})`);
             
             // ✅ CRITICAL: Find portal locations NOW that map is loaded
             this.findPortalLocations();
-            console.log(`✅ Portal map loaded and portals detected during gameplay`);
+            // console.log(`✅ Portal map loaded and portals detected during gameplay`);
         };
         
         this.portalMap.onerror = () => {
-            console.log("❌ Could not load Component 2.png portal map");
-            console.log(`⚠️ Game will continue without portals`);
+            // console.log("❌ Could not load Component 2.png portal map");
+            // console.log(`⚠️ Game will continue without portals`);
         };
         
         this.portalMap.src = 'Component 2.png';
     }
     
     findPortalLocations() {
-        // Only run detection if we have the portal map loaded and no portals yet
-        if (!this.portalMapLoaded || !this.portalCtx) {
-            console.log(`⚠️ Portal map not ready yet - skipping detection`);
-            return;
-        }
-        
-        // Only initialize portals once to prevent position shifts
+        // Only initialize portals once
         if (this.portals.length > 0) {
-            console.log(`🌀 Portals already initialized (${this.portals.length} portals) - skipping detection`);
             return;
         }
         
-        console.log(`🔍 Scanning Component 2.png for portal locations...`);
+        // HARDCODED PORTAL COORDINATES - Original correct positions
+        this.portals = [
+            { x: 165, y: 274, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 1
+            { x: 847, y: 280, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 2
+            { x: 499, y: 296, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 3
+            { x: 859, y: 568, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 4
+            { x: 177, y: 562, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 5 (team portal - moved right by 50px)
+            { x: 202, y: 843, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false },  // Portal 6
+            { x: 837, y: 838, width: 64, height: 64, rotation: 0, rotationSpeed: 0, isActive: false }   // Portal 7
+        ];
         
-        this.portals = []; // Clear existing portals
-        const imageData = this.portalCtx.getImageData(0, 0, this.portalCanvas.width, this.portalCanvas.height);
-        const data = imageData.data;
-        const visited = new Set(); // Track pixels we've already processed
-        
-        console.log(`📏 Portal map dimensions: ${this.portalCanvas.width}x${this.portalCanvas.height}`);
-        
-        // Function to check if a pixel is white
-        const isWhitePixel = (x, y) => {
-            if (x < 0 || x >= this.portalCanvas.width || y < 0 || y >= this.portalCanvas.height) return false;
-            const index = (y * this.portalCanvas.width + x) * 4;
-            const r = data[index];
-            const g = data[index + 1];
-            const b = data[index + 2];
-            return r > 240 && g > 240 && b > 240;
-        };
-        
-        // Flood fill to find connected white areas
-        const floodFill = (startX, startY) => {
-            const pixels = [];
-            const stack = [{x: startX, y: startY}];
-            
-            while (stack.length > 0) {
-                const {x, y} = stack.pop();
-                const key = `${x}_${y}`;
-                
-                if (visited.has(key) || !isWhitePixel(x, y)) continue;
-                
-                visited.add(key);
-                pixels.push({x, y});
-                
-                // Add neighbors to stack
-                stack.push(
-                    {x: x + 1, y: y},
-                    {x: x - 1, y: y},
-                    {x: x, y: y + 1},
-                    {x: x, y: y - 1}
-                );
-            }
-            
-            return pixels;
-        };
-        
-        // Scan every pixel to find white shapes
-        for (let y = 0; y < this.portalCanvas.height; y += 2) { // Skip some pixels for performance
-            for (let x = 0; x < this.portalCanvas.width; x += 2) {
-                const key = `${x}_${y}`;
-                
-                if (!visited.has(key) && isWhitePixel(x, y)) {
-                    // Found a new white shape - flood fill to get all connected pixels
-                    const shapePixels = floodFill(x, y);
-                    
-                    if (shapePixels.length > 10) { // Only process shapes with reasonable size
-                        // Calculate center of the shape
-                        let sumX = 0, sumY = 0;
-                        shapePixels.forEach(pixel => {
-                            sumX += pixel.x;
-                            sumY += pixel.y;
-                        });
-                        
-                        const centerX = sumX / shapePixels.length;
-                        const centerY = sumY / shapePixels.length;
-                        
-                        // Convert portal map coordinates to game map coordinates
-                        const gameX = centerX / this.portalScaleX;
-                        const gameY = centerY / this.portalScaleY;
-                        
-                        // Add portal to our array
-                        this.portals.push({
-                            x: gameX,
-                            y: gameY,
-                            width: this.portalImage.naturalWidth || 64,
-                            height: this.portalImage.naturalHeight || 64,
-                            rotation: 0, // Current rotation angle in radians
-                            rotationSpeed: 0, // Current rotation speed
-                            isActive: false
-                        });
-                        
-                        console.log(`✅ Found portal at (${Math.round(gameX)}, ${Math.round(gameY)}) - shape size: ${shapePixels.length} pixels`);
-                    }
-                }
-            }
-        }
-        
-        console.log(`🌀 Portal detection complete! Found ${this.portals.length} portals total`);
-        
-        // Apply the adjustment for middle-left portal if needed
-        this.adjustMiddleLeftPortal();
+        // console.log(`✅ HARDCODED portals initialized! Total: ${this.portals.length} portals`);
     }
     
-    adjustMiddleLeftPortal() {
-        if (this.portals.length === 0) return;
-        
-        // Find portals on the left side of the map (left 40% of the map)
-        const leftSidePortals = this.portals.filter(portal => portal.x < this.mapWidth * 0.4);
-        
-        if (leftSidePortals.length >= 3) {
-            // Sort by Y coordinate (top to bottom)
-            leftSidePortals.sort((a, b) => a.y - b.y);
-            
-            // Get the middle portal (index 1 for the second portal)
-            const middlePortal = leftSidePortals[1];
-            
-            // Shift it 25 pixels to the right
-            middlePortal.x += 25;
-            
-            console.log(`🔧 Adjusted middle-left portal: moved 25px right to (${middlePortal.x.toFixed(1)}, ${middlePortal.y.toFixed(1)})`);
-        } else {
-            console.log(`⚠️ Could not find 3 portals on left side for adjustment (found ${leftSidePortals.length})`);
-        }
-    }
+    // adjustMiddleLeftPortal() - REMOVED: Coordinates already include the adjustment
     
     loadPortalImage() {
         this.portalImage.onload = () => {
             this.portalImageLoaded = true;
-            console.log(`🚪 Portal image loaded successfully!`);
-            console.log(`📏 Portal image dimensions: ${this.portalImage.naturalWidth}x${this.portalImage.naturalHeight}`);
+            // console.log(`🚪 Portal image loaded successfully!`);
+            // console.log(`📏 Portal image dimensions: ${this.portalImage.naturalWidth}x${this.portalImage.naturalHeight}`);
             
             // Update portal dimensions if we already found portals but didn't have image dimensions
             if (this.portals.length > 0) {
@@ -398,15 +347,15 @@ class StartupQuest {
                     portal.width = this.portalImage.naturalWidth;
                     portal.height = this.portalImage.naturalHeight;
                 });
-                console.log(`🔄 Updated ${this.portals.length} portal dimensions to ${this.portalImage.naturalWidth}x${this.portalImage.naturalHeight}`);
+                // console.log(`🔄 Updated ${this.portals.length} portal dimensions to ${this.portalImage.naturalWidth}x${this.portalImage.naturalHeight}`);
             }
             
-            console.log(`✅ Portal image loaded during gameplay`);
+            // console.log(`✅ Portal image loaded during gameplay`);
         };
         
         this.portalImage.onerror = () => {
-            console.log("❌ Could not load portal.png");
-            console.log(`⚠️ Game will continue without portal graphics`);
+            // console.log("❌ Could not load portal.png");
+            // console.log(`⚠️ Game will continue without portal graphics`);
         };
         
         this.portalImage.src = 'portal.png';
@@ -486,13 +435,18 @@ class StartupQuest {
     checkPortalInteraction() {
         // Debug: Always log portal count on first call
         if (!this.hasLoggedPortalCount) {
-            console.log(`Portal system initialized with ${this.portals.length} portals`);
+                    // console.log(`Portal system initialized with ${this.portals.length} portals`);
+        // console.log(`📱 Is mobile device: ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)}`);
+        // console.log(`📱 Screen dimensions: ${window.innerWidth}x${window.innerHeight}`);
+        // console.log(`📱 Canvas dimensions: ${this.canvas.width}x${this.canvas.height}`);
+        // console.log(`📱 Map dimensions: ${this.mapWidth}x${this.mapHeight}`);
+        // console.log(`📱 Scale: ${this.scale}`);
             this.hasLoggedPortalCount = true;
         }
         
         // Debug: Basic info
         if (this.portals.length === 0) {
-            console.log("No portals found!");
+            // console.log("No portals found!");
             return;
         }
         
@@ -502,36 +456,29 @@ class StartupQuest {
             return;
         }
         
-        // Grace period check - prevent portal interaction immediately after game start/back button
-        if (this.gameStartTime && Date.now() - this.gameStartTime < this.gracePeriod) {
-            // During grace period, ensure opacity stays at 1.0
-            this.mapOpacity = 1.0;
-            return;
-        }
+
         
         let nearestPortalIndex = -1;
         let minDistance = Infinity;
         
         this.portals.forEach((portal, index) => {
-            // Portal coordinates are already the center
-            const portalCenterX = portal.x;
-            const portalCenterY = portal.y;
-            
-            const playerCenterX = this.player.x + this.player.width / 2;
-            const playerCenterY = this.player.y + this.player.height / 2;
+                    // Portal coordinates are already the center
+        const portalCenterX = portal.x;
+        const portalCenterY = portal.y;
+        
+        // Adjust player coordinates for navbar offset in portal detection (mobile only)
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const playerCenterY = (this.player.y + this.player.height / 2) - (isMobileDevice ? 60 : 0); // Subtract navbar offset only on mobile
             
             const distance = Math.sqrt(
                 Math.pow(playerCenterX - portalCenterX, 2) + 
                 Math.pow(playerCenterY - portalCenterY, 2)
             );
             
-            // Debug: Show distance to nearest portal occasionally
-            if (index === 0 && Math.random() < 0.05) { // 5% chance for better debugging
-                console.log(`🎯 Portal ${index} collision check:`);
-                console.log(`   Portal: (${Math.round(portalCenterX)}, ${Math.round(portalCenterY)})`);
-                console.log(`   Player: (${Math.round(playerCenterX)}, ${Math.round(playerCenterY)})`);
-                console.log(`   Distance: ${Math.round(distance)}px`);
-            }
+            // Enhanced mobile debugging for portal detection
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            // Debug logs removed
             
             // Check if player is within portal area (70px radius)
             if (distance <= 70) {
@@ -546,6 +493,8 @@ class StartupQuest {
         });
         
         // Check if player is at the center of a portal (within 50px of center)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         if (nearestPortalIndex !== -1 && minDistance <= 50) {
             if (this.currentPortalIndex === nearestPortalIndex) {
                 // Continue timing for the same portal
@@ -560,13 +509,10 @@ class StartupQuest {
                     this.mapOpacity = 1.0; // Full opacity
                 }
                 
-                // Debug: Show progress every 30 frames (half second)
-                if (this.portalTeleportTimer % 30 === 0) {
-                    console.log(`⏱️ Teleport progress: ${Math.round((this.portalTeleportTimer/this.teleportDelay)*100)}%`);
-                }
+                // Debug: Show progress every 30 frames (half second) - REMOVED
                 
                 if (this.portalTeleportTimer >= this.teleportDelay) {
-                    console.log(`Teleporting to portal ${nearestPortalIndex}!`);
+                    // Teleport logic - debug removed
                     this.isTeleporting = true; // Set teleporting flag
                     this.mapOpacity = 0.2; // Keep faded during transition
                     this.teleportToPage(nearestPortalIndex);
@@ -576,13 +522,14 @@ class StartupQuest {
                 this.currentPortalIndex = nearestPortalIndex;
                 this.portalTeleportTimer = 0;
                 this.mapOpacity = 1.0; // Reset opacity
-                console.log(`Started teleport timer for portal ${nearestPortalIndex} (distance: ${Math.round(minDistance)}px)`);
+                
+                // Started teleport timer - debug removed
             }
             this.isAtPortalCenter = true;
         } else {
-            // Player moved away from portal center
+            // Player moved away from portal center or not close enough
             if (this.portalTeleportTimer > 0) {
-                console.log(`Teleport cancelled - moved away from portal`);
+                // Teleport cancelled - debug removed
             }
             this.portalTeleportTimer = 0;
             this.currentPortalIndex = -1;
@@ -592,6 +539,57 @@ class StartupQuest {
             if (!this.isTeleporting) {
                 this.mapOpacity = 1.0;
             }
+        }
+        
+        // Update mobile debug overlay
+        if (isMobile) {
+            this.updateMobileDebug(nearestPortalIndex, minDistance);
+        }
+    }
+    
+    updateMobileDebug(nearestPortalIndex, minDistance) {
+        if (!this.debugPlayer) return; // Elements not found
+        
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y + this.player.height / 2;
+        
+        // Update player position
+        this.debugPlayer.textContent = `Player: (${Math.round(playerCenterX)}, ${Math.round(playerCenterY)})`;
+        
+        // Update nearest portal info
+        if (nearestPortalIndex !== -1) {
+            const portal = this.portals[nearestPortalIndex];
+            this.debugNearest.textContent = `Portal ${nearestPortalIndex + 1}: (${portal.x}, ${portal.y})`;
+            this.debugDistance.textContent = `Distance: ${Math.round(minDistance)}px`;
+            
+            // Update status based on distance
+            if (minDistance <= 50) {
+                this.debugStatus.textContent = `Status: IN CENTER (≤50px)`;
+                this.debugStatus.style.color = '#00ff00'; // Green
+            } else if (minDistance <= 70) {
+                this.debugStatus.textContent = `Status: In Range (≤70px)`;
+                this.debugStatus.style.color = '#ffff00'; // Yellow
+            } else {
+                this.debugStatus.textContent = `Status: Too Far (need ≤70px)`;
+                this.debugStatus.style.color = '#ff6666'; // Red
+            }
+            
+            // Update teleport progress
+            if (this.portalTeleportTimer > 0) {
+                const progress = Math.round((this.portalTeleportTimer / this.teleportDelay) * 100);
+                this.debugProgress.textContent = `Progress: ${progress}% (${this.portalTeleportTimer}/${this.teleportDelay})`;
+                this.debugProgress.style.color = '#00ffff'; // Cyan
+            } else {
+                this.debugProgress.textContent = `Progress: 0%`;
+                this.debugProgress.style.color = '#888888'; // Gray
+            }
+        } else {
+            this.debugNearest.textContent = `Portal: None detected`;
+            this.debugDistance.textContent = `Distance: ∞`;
+            this.debugStatus.textContent = `Status: Searching...`;
+            this.debugStatus.style.color = '#888888'; // Gray
+            this.debugProgress.textContent = `Progress: 0%`;
+            this.debugProgress.style.color = '#888888'; // Gray
         }
     }
     
@@ -623,11 +621,14 @@ class StartupQuest {
             };
             localStorage.setItem('lastPortalUsed', JSON.stringify(portalData));
             
-            console.log(`🚪 Teleporting from ${position} portal to: ${destination}`);
-            console.log(`💾 Stored portal data for return:`, portalData);
+            // console.log(`🚪 Teleporting from ${position} portal to: ${destination}`);
+            // console.log(`💾 Stored portal data for return:`, portalData);
+            
+
+            
             window.location.href = destination;
         } else {
-            console.log(`⚠️ No destination defined for ${position} portal`);
+            // console.log(`⚠️ No destination defined for ${position} portal`);
         }
     }
     
@@ -659,7 +660,7 @@ class StartupQuest {
         }
         
         const position = `${vertical}-${horizontal}`;
-        console.log(`📍 Portal at (${portal.x.toFixed(0)}, ${portal.y.toFixed(0)}) classified as: ${position}`);
+        // console.log(`📍 Portal at (${portal.x.toFixed(0)}, ${portal.y.toFixed(0)}) classified as: ${position}`);
         
         return position;
     }
@@ -671,42 +672,46 @@ class StartupQuest {
         }
         
         try {
-            // Check the same points as in movement collision detection
-            const playerSize = 8; // Same as in updatePlayer collision detection
-            const checkPoints = [
-                { x: x, y: y },                           // Center
-                { x: x - playerSize, y: y },              // Left
-                { x: x + playerSize, y: y },              // Right
-                { x: x, y: y - playerSize },              // Top
-                { x: x, y: y + playerSize }               // Bottom
-            ];
+                    // Check the same points as in movement collision detection
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const playerSize = isMobileDevice ? 5 : 8; // Smaller collision box on mobile for less restrictive detection
+        const checkPoints = [
+            { x: x, y: y },                           // Center
+            { x: x - playerSize, y: y },              // Left
+            { x: x + playerSize, y: y },              // Right
+            { x: x, y: y - playerSize },              // Top
+            { x: x, y: y + playerSize }               // Bottom
+        ];
+        
+        for (let point of checkPoints) {
+            // Convert game coordinates to collision map coordinates
+            // Adjust Y coordinate for navbar offset before collision check (mobile only)
+            const adjustedPointY = point.y - (isMobileDevice ? 60 : 0); // Subtract navbar offset only on mobile
+            const collisionX = Math.floor(point.x * this.collisionScaleX);
+            const collisionY = Math.floor(adjustedPointY * this.collisionScaleY);
             
-            for (let point of checkPoints) {
-                // Convert game coordinates to collision map coordinates
-                const collisionX = Math.floor(point.x * this.collisionScaleX);
-                const collisionY = Math.floor(point.y * this.collisionScaleY);
-                
-                // Make sure we're within bounds
-                if (collisionX < 0 || collisionX >= this.collisionCanvas.width || 
-                    collisionY < 0 || collisionY >= this.collisionCanvas.height) {
-                    continue;
-                }
-                
-                // Get the pixel color at this position
-                const imageData = this.collisionCtx.getImageData(collisionX, collisionY, 1, 1);
-                const [r, g, b, a] = imageData.data;
-                
-                // Check if it's a white (blocked) area
-                const isWhite = r > 245 && g > 245 && b > 245;
-                
-                if (isWhite) {
-                    return false; // Position is blocked
-                }
+            // Make sure we're within bounds
+            if (collisionX < 0 || collisionX >= this.collisionCanvas.width ||
+                collisionY < 0 || collisionY >= this.collisionCanvas.height) {
+                continue;
             }
+            
+            // Get the pixel color at this position
+            const imageData = this.collisionCtx.getImageData(collisionX, collisionY, 1, 1);
+            const [r, g, b, a] = imageData.data;
+            
+            // Check if it's a white (blocked) area - less restrictive on mobile
+            const whiteThreshold = isMobileDevice ? 250 : 245; // Higher threshold = less restrictive on mobile
+            const isWhite = r > whiteThreshold && g > whiteThreshold && b > whiteThreshold;
+            
+            if (isWhite) {
+                return false; // Position is blocked
+            }
+        }
             
             return true; // All check points are clear
         } catch (error) {
-            console.log(`⚠️ Error checking position validity: ${error.message}`);
+            // console.log(`⚠️ Error checking position validity: ${error.message}`);
             return true; // Assume valid if error
         }
     }
@@ -714,11 +719,11 @@ class StartupQuest {
     findNearestValidPosition(targetX, targetY, portalX, portalY) {
         // If target position is already valid, use it
         if (this.isValidPosition(targetX, targetY)) {
-            console.log(`✅ Target position (${targetX.toFixed(0)}, ${targetY.toFixed(0)}) is valid`);
+            // console.log(`✅ Target position (${targetX.toFixed(0)}, ${targetY.toFixed(0)}) is valid`);
             return { x: targetX, y: targetY };
         }
         
-        console.log(`❌ Target position (${targetX.toFixed(0)}, ${targetY.toFixed(0)}) is blocked, searching for valid position...`);
+        // console.log(`❌ Target position (${targetX.toFixed(0)}, ${targetY.toFixed(0)}) is blocked, searching for valid position...`);
         
         // Search in expanding circles around the target position
         const maxSearchRadius = 150; // Maximum search distance
@@ -740,14 +745,14 @@ class StartupQuest {
                 }
                 
                 if (this.isValidPosition(testX, testY)) {
-                    console.log(`✅ Found valid position at (${testX.toFixed(0)}, ${testY.toFixed(0)}) - distance: ${radius}px from target`);
+                    // console.log(`✅ Found valid position at (${testX.toFixed(0)}, ${testY.toFixed(0)}) - distance: ${radius}px from target`);
                     return { x: testX, y: testY };
                 }
             }
         }
         
         // If no valid position found near target, try near the portal itself
-        console.log(`⚠️ No valid position found near target, trying portal area...`);
+                    // console.log(`⚠️ No valid position found near target, trying portal area...`);
         
         for (let radius = 60; radius <= 120; radius += 20) {
             const numPoints = 8;
@@ -763,14 +768,14 @@ class StartupQuest {
                 }
                 
                 if (this.isValidPosition(testX, testY)) {
-                    console.log(`✅ Found valid position near portal at (${testX.toFixed(0)}, ${testY.toFixed(0)})`);
+                    // console.log(`✅ Found valid position near portal at (${testX.toFixed(0)}, ${testY.toFixed(0)})`);
                     return { x: testX, y: testY };
                 }
             }
         }
         
         // Last resort: use map center (should always be valid)
-        console.log(`🚨 Using map center as fallback position`);
+        // console.log(`🚨 Using map center as fallback position`);
         return { x: this.mapWidth / 2, y: this.mapHeight / 2 };
     }
     
@@ -953,25 +958,59 @@ class StartupQuest {
     }
     
     setupEventListeners() {
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
+        // console.log(`🎮 Setting up event listeners... DOM ready state: ${document.readyState}`);
+        
+        // Remove existing listeners first to prevent duplicates
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+        }
+        if (this.keyupHandler) {
+            document.removeEventListener('keyup', this.keyupHandler);
+        }
+        
+        // Create bound handlers
+        this.keydownHandler = (e) => {
             this.keys[e.code] = true;
-
-        });
+            // Temporary debug log for first load issues - remove after testing
+            if (!this.firstKeyPressed) {
+                // console.log(`🎮 First key pressed: ${e.code} - movement should work now!`);
+                this.firstKeyPressed = true;
+            }
+        };
         
-        document.addEventListener('keyup', (e) => {
+        this.keyupHandler = (e) => {
             this.keys[e.code] = false;
-        });
+        };
         
-        // Mobile controls
+        // Keyboard controls
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
+        // console.log(`✅ Keyboard event listeners attached`);
+        
+        // Mobile controls - check if elements exist first
         const dpadButtons = document.querySelectorAll('.dpad-btn');
+        // console.log(`🔍 Found ${dpadButtons.length} mobile control buttons`);
+        // console.log(`📱 User agent: ${navigator.userAgent}`);
+        // console.log(`📱 Touch support: ${'ontouchstart' in window || navigator.maxTouchPoints > 0}`);
+        // Force mobile controls to be visible for debugging
+        const mobileControls = document.getElementById('mobile-controls');
+        if (mobileControls && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // console.log(`📱 Mobile device detected - forcing controls visibility`);
+            mobileControls.style.display = 'flex';
+            mobileControls.style.opacity = '1';
+            mobileControls.style.visibility = 'visible';
+            mobileControls.style.pointerEvents = 'auto';
+        }
+        
         dpadButtons.forEach(btn => {
+            // console.log(`📱 Setting up button: ${btn.dataset.direction}`);
             // Touch events
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.touchDirection = btn.dataset.direction;
                 btn.classList.add('pressed');
+                // console.log(`📱 Touch start: ${btn.dataset.direction}`);
             }, { passive: false });
             
             btn.addEventListener('touchend', (e) => {
@@ -979,12 +1018,14 @@ class StartupQuest {
                 e.stopPropagation();
                 this.touchDirection = null;
                 btn.classList.remove('pressed');
+                // console.log(`📱 Touch end: ${btn.dataset.direction}`);
             }, { passive: false });
             
             btn.addEventListener('touchcancel', (e) => {
                 e.preventDefault();
                 this.touchDirection = null;
                 btn.classList.remove('pressed');
+                // console.log(`📱 Touch cancel: ${btn.dataset.direction}`);
             }, { passive: false });
             
             // Mouse events for desktop testing
@@ -1322,6 +1363,17 @@ class StartupQuest {
     startGame() {
         // Start the game immediately
         this.gameLoaded = true;
+        
+        // Ensure movement is enabled by resetting any blocking flags
+        this.currentRoom = null;
+        
+        // Verify event listeners are working (debug for hard refresh issues)
+        // console.log(`🔧 Event listeners check - Handler exists: ${!!this.keydownHandler}`);
+        // console.log(`🔧 Test key press any key (WASD or arrows) to confirm movement works`);
+        
+        // Force re-setup as a safety measure for hard refresh scenarios
+        this.setupEventListeners();
+        
         this.gameLoop();
         
         // CRITICAL: Reset all game state to prevent crashes and bugs
@@ -1331,6 +1383,10 @@ class StartupQuest {
         this.currentPortalIndex = -1;
         this.isAtPortalCenter = false;
         this.currentRoom = null; // ✅ CRUCIAL: Enables movement after "Go Back"
+        
+        // CRITICAL: Recalculate collision scaling to fix coordinate shift issues
+        // console.log('🔧 Recalculating collision scaling in startGame...');
+        this.recalculateCollisionScaling();
         
         // Reset portal states to prevent interaction bugs
         if (this.portals && this.portals.length > 0) {
@@ -1343,10 +1399,10 @@ class StartupQuest {
         
         // Ensure portals are initialized if they weren't already and portal map is ready
         if (this.portals.length === 0 && this.portalMapLoaded && this.portalCtx) {
-            console.log(`⚠️ Portals not initialized but portal map is ready - initializing now...`);
+            // console.log(`⚠️ Portals not initialized but portal map is ready - initializing now...`);
             this.findPortalLocations();
         } else if (this.portals.length === 0) {
-            console.log(`⚠️ Portals not initialized and portal map not ready yet - will initialize when map loads`);
+            // console.log(`⚠️ Portals not initialized and portal map not ready yet - will initialize when map loads`);
         }
         
         // Check if player is returning from a page via Go Back button
@@ -1356,12 +1412,86 @@ class StartupQuest {
         if (returnFromPage && lastPortalUsed) {
             try {
                 const portalData = JSON.parse(lastPortalUsed);
-                // Position player near the portal they came from, with offset to avoid immediate re-trigger
-                const offsetDistance = 100; // Distance from portal center
+                let targetX, targetY;
                 
-                // Calculate initial offset position (slightly below and to the right of portal)
-                let targetX = portalData.x + offsetDistance;
-                let targetY = portalData.y + offsetDistance;
+                // Check if this is a mobile device
+                const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                if (isMobileDevice) {
+                    // Special positioning for MOBILE ONLY
+                    if (portalData.position === 'top-right') {
+                        // Position 35px to the bottom left of sponsors portal (mobile)
+                        targetX = portalData.x - 35; // 35px to the left
+                        targetY = portalData.y + 35; // 35px below
+                        
+                        // console.log(`🎯 Mobile sponsors portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'middle-right') {
+                        // Special positioning for contact portal (mobile)
+                        // Position 25px to the left of contact portal
+                        targetX = portalData.x - 25; // 25px to the left
+                        targetY = portalData.y; // Same Y position as portal
+                        
+                        // console.log(`🎯 Mobile contact portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'bottom-right') {
+                        // Special positioning for schedule portal (mobile)
+                        // Position 25px to the left of schedule portal
+                        targetX = portalData.x - 25; // 25px to the left
+                        targetY = portalData.y; // Same Y position as portal
+                        
+                        // console.log(`🎯 Mobile schedule portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'top-middle') {
+                        // Special positioning for apply portal (mobile)
+                        // Position 25px below the apply portal
+                        targetX = portalData.x; // Same X position as portal
+                        targetY = portalData.y + 25; // 25px below
+                        
+                        // console.log(`🎯 Mobile apply portal positioning: (${targetX}, ${targetY})`);
+                    } else {
+                        // Default positioning for mobile
+                        const offsetDistance = 100; // Distance from portal center
+                        
+                        // Calculate initial offset position (slightly below and to the right of portal)
+                        targetX = portalData.x + offsetDistance;
+                        targetY = portalData.y + offsetDistance;
+                    }
+                } else {
+                    // Desktop positioning - custom positioning per portal with 75px offsets
+                    if (portalData.position === 'top-right') {
+                        // Position 75px to the bottom left of sponsors portal (desktop)
+                        targetX = portalData.x - 75; // 75px to the left
+                        targetY = portalData.y + 75; // 75px below
+                        
+                        // console.log(`🎯 Desktop sponsors portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'middle-right') {
+                        // Special positioning for contact portal (desktop)
+                        // Position 75px to the left of contact portal
+                        targetX = portalData.x - 75; // 75px to the left
+                        targetY = portalData.y; // Same Y position as portal
+                        
+                        // console.log(`🎯 Desktop contact portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'bottom-right') {
+                        // Special positioning for schedule portal (desktop)
+                        // Position 75px to the left of schedule portal
+                        targetX = portalData.x - 75; // 75px to the left
+                        targetY = portalData.y; // Same Y position as portal
+                        
+                        // console.log(`🎯 Desktop schedule portal positioning: (${targetX}, ${targetY})`);
+                    } else if (portalData.position === 'top-middle') {
+                        // Special positioning for apply portal (desktop)
+                        // Position 75px below the apply portal
+                        targetX = portalData.x; // Same X position as portal
+                        targetY = portalData.y + 75; // 75px below
+                        
+                        // console.log(`🎯 Desktop apply portal positioning: (${targetX}, ${targetY})`);
+                    } else {
+                        // Default positioning for desktop (other portals)
+                        const offsetDistance = 100; // Distance from portal center
+                        
+                        // Calculate initial offset position (slightly below and to the right of portal)
+                        targetX = portalData.x + offsetDistance;
+                        targetY = portalData.y + offsetDistance;
+                    }
+                }
                 
                 // Make sure player doesn't go outside map bounds
                 targetX = Math.max(50, Math.min(this.mapWidth - 50, targetX));
@@ -1372,12 +1502,12 @@ class StartupQuest {
                 this.player.x = validPosition.x;
                 this.player.y = validPosition.y;
                 
-                console.log(`🔄 Player returning from ${returnFromPage} - positioned near ${portalData.position} portal at (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)})`);
+                // console.log(`🔄 Player returning from ${returnFromPage} - positioned near ${portalData.position} portal at (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)})`);
                 
                 // Clear the return flag so normal center positioning works for fresh visits
                 localStorage.removeItem('returnFromPage');
             } catch (error) {
-                console.log(`⚠️ Error parsing portal data, using center position:`, error);
+                // console.log(`⚠️ Error parsing portal data, using center position:`, error);
                 this.player.x = this.mapWidth / 2;
                 this.player.y = this.mapHeight / 2;
             }
@@ -1385,7 +1515,7 @@ class StartupQuest {
             // Fresh start - position at center of map
             this.player.x = this.mapWidth / 2;
             this.player.y = this.mapHeight / 2;
-            console.log(`🎮 Fresh game start - player positioned at center (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)})`);
+            // console.log(`🎮 Fresh game start - player positioned at center (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)})`);
         }
         
         this.player.isMoving = false;
@@ -1393,9 +1523,7 @@ class StartupQuest {
         // Update camera to center on the reset player position
         this.updateCamera();
         
-        // Add a brief grace period to prevent immediate portal interaction on game start/back button
-        this.gameStartTime = Date.now();
-        this.gracePeriod = 1000; // 1 second grace period
+
         
         // Initialize character sprites properly
         this.characterSpriteStatic.classList.remove('hidden');
@@ -1403,9 +1531,12 @@ class StartupQuest {
         this.characterSpriteStatic.style.display = 'block';
         this.characterSpriteElement.style.display = 'none';
         
-        // Explicitly reset character sprite opacity styles
+        // Explicitly reset character sprite opacity styles and force immediate render
         this.characterSpriteStatic.style.opacity = '1';
         this.characterSpriteElement.style.opacity = '1';
+        
+        // Force a render to apply the opacity reset immediately
+        this.render();
         
         // Show title overlay on the map after game loads
         this.mapTitleOverlay.classList.remove('hidden');
@@ -1415,10 +1546,38 @@ class StartupQuest {
             this.updateCharacterSprite();
         }
         
-        console.log(`🔄 Game state reset - Opacity: ${this.mapOpacity}, Teleporting: ${this.isTeleporting}`);
-        console.log(`🎯 Player position reset to center: (${this.player.x}, ${this.player.y})`);
-        console.log(`🐉 Character sprites initialized - Static visible, Animated hidden`);
-        console.log(`🎮 Game started immediately - Fresh start every time!`);
+        // console.log(`🔄 Game state reset - Opacity: ${this.mapOpacity}, Teleporting: ${this.isTeleporting}`);
+        // console.log(`🎯 Player position reset to center: (${this.player.x}, ${this.player.y})`);
+        // console.log(`🐉 Character sprites initialized - Static visible, Animated hidden`);
+        // console.log(`🎮 Game started immediately - Fresh start every time!`);
+    }
+    
+    resetOpacityAfterReturn() {
+        // Only reset opacity - don't interfere with navigation
+        // console.log('🔄 Resetting opacity after back button return');
+        
+        // Force reset all visual opacity when user returns to page
+        this.mapOpacity = 1.0;
+        this.isTeleporting = false;
+        this.portalTeleportTimer = 0;
+        this.currentPortalIndex = -1;
+        
+        // CRITICAL: Recalculate collision scaling to fix coordinate misalignment
+        // console.log('🔧 Recalculating collision scaling after page return...');
+        this.recalculateCollisionScaling();
+        
+        // Reset character sprite opacities immediately
+        if (this.characterSpriteStatic) {
+            this.characterSpriteStatic.style.opacity = '1';
+        }
+        if (this.characterSpriteElement) {
+            this.characterSpriteElement.style.opacity = '1';
+        }
+        
+        // Force render to apply changes immediately
+        if (this.gameLoaded && this.canvas && this.ctx) {
+            this.render();
+        }
     }
     
     gameLoop() {
@@ -1438,10 +1597,7 @@ class StartupQuest {
         this.updatePortalRotations();
         
         // Check for portal interaction and teleportation
-        // Reduced debug logging for performance
-        if (Math.random() < 0.001) { // Only log occasionally
-            console.log(`Checking portal interaction... Portals: ${this.portals.length}`);
-        }
+        // Debug logging commented out for coordinate collection
         this.checkPortalInteraction();
     }
     
@@ -1511,11 +1667,19 @@ class StartupQuest {
                 this.player.y = newY;
                 this.player.isMoving = true; // Only set to true if actually moved
                 
+                // Debug movement on mobile (reduce frequency)
+                if (this.touchDirection && Math.random() < 0.1) {
+                    // console.log(`📱 Player moved: (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)}) via ${this.touchDirection}`);
+                }
+                
                 // Fade out title on first movement
                 if (!this.titleFaded) {
                     this.mapTitleOverlay.style.opacity = '0';
                     this.titleFaded = true;
                 }
+            } else if (this.touchDirection) {
+                // Debug blocked movement on mobile
+                // console.log(`📱 Movement blocked at: (${newX.toFixed(0)}, ${newY.toFixed(0)}) via ${this.touchDirection}`);
             }
         }
         
@@ -1528,15 +1692,17 @@ class StartupQuest {
     canMoveTo(x, y) {
         // Check basic bounds to keep character on the image
         if (x < 20 || x >= this.mapWidth - 20 || y < 20 || y >= this.mapHeight - 20) {
-            console.log(`🚫 BOUNDARY: Position (${Math.round(x)}, ${Math.round(y)}) is outside map bounds`);
             return false;
         }
         
         // Check collision map if loaded
         if (this.collisionMapLoaded && this.collisionCtx) {
             try {
-                // Check fewer points with moderate collision box
-                const playerSize = 8; // Moderate collision box - half the player width/height
+                // Check if this is a mobile device for less restrictive collision
+                const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                // Make collision less restrictive on mobile
+                const playerSize = isMobileDevice ? 5 : 8; // Smaller collision box on mobile
                 const checkPoints = [
                     { x: x, y: y },                           // Center
                     { x: x - playerSize, y: y },              // Left
@@ -1546,12 +1712,13 @@ class StartupQuest {
                 ];
                 
                 let hasCollision = false;
-                let collisionDetails = [];
                 
                 for (let point of checkPoints) {
                     // Convert game coordinates to collision map coordinates
+                    // Adjust Y coordinate for navbar offset before collision check (mobile only)
+                    const adjustedPointY = point.y - (isMobileDevice ? 60 : 0); // Subtract navbar offset only on mobile
                     const collisionX = Math.floor(point.x * this.collisionScaleX);
-                    const collisionY = Math.floor(point.y * this.collisionScaleY);
+                    const collisionY = Math.floor(adjustedPointY * this.collisionScaleY);
                     
                     // Make sure we're within bounds
                     if (collisionX < 0 || collisionX >= this.collisionCanvas.width || 
@@ -1563,58 +1730,34 @@ class StartupQuest {
                     const imageData = this.collisionCtx.getImageData(collisionX, collisionY, 1, 1);
                     const [r, g, b, a] = imageData.data;
                     
-                    // Check if it's a white (blocked) area - moderate threshold
-                    const isWhite = r > 245 && g > 245 && b > 245;
+                    // Check if it's a white (blocked) area - less restrictive threshold on mobile
+                    const whiteThreshold = isMobileDevice ? 250 : 245; // Higher threshold = less restrictive on mobile
+                    const isWhite = r > whiteThreshold && g > whiteThreshold && b > whiteThreshold;
                     
                     if (isWhite) {
                         hasCollision = true;
-                        collisionDetails.push({
-                            gamePos: `(${Math.round(point.x)}, ${Math.round(point.y)})`,
-                            collisionPos: `(${collisionX}, ${collisionY})`,
-                            rgb: `RGB(${r}, ${g}, ${b})`
-                        });
+                        break; // Exit early if collision found
                     }
                 }
                 
-                // Log collision details - show more info while debugging
-                this.collisionCheckCounter++;
-                const shouldLog = (this.collisionCheckCounter % 50 === 0) || hasCollision;
+                return !hasCollision;
                 
-                if (shouldLog) {
-                    console.log(`🎯 MULTI-POINT COLLISION CHECK #${this.collisionCheckCounter}:`);
-                    console.log(`   🎮  Player Position: (${Math.round(x)}, ${Math.round(y)})`);
-                    console.log(`   📐  Checking ${checkPoints.length} points around player`);
-                    
-                    if (hasCollision) {
-                        console.log(`   ❌ COLLISION DETECTED:`);
-                        collisionDetails.forEach((detail, i) => {
-                            console.log(`     Point ${i+1}: ${detail.gamePos} → ${detail.collisionPos} = ${detail.rgb}`);
-                        });
-                                         } else if (this.collisionCheckCounter % 50 === 0) {
-                         console.log(`   ✅ All points clear - checking RGB values around player`);
-                         // Show some sample RGB values to help debug
-                         const centerX = Math.floor(x * this.collisionScaleX);
-                         const centerY = Math.floor(y * this.collisionScaleY);
-                         if (centerX >= 0 && centerX < this.collisionCanvas.width && centerY >= 0 && centerY < this.collisionCanvas.height) {
-                             const centerData = this.collisionCtx.getImageData(centerX, centerY, 1, 1);
-                             const [cr, cg, cb] = centerData.data;
-                             console.log(`     Center pixel: RGB(${cr}, ${cg}, ${cb})`);
-                         }
-                    }
-                }
-                
-                // Return false if any point hits a blocked area
-                if (hasCollision) {
-                    return false;
-                }
             } catch (error) {
-                console.log(`⚠️ CORS ERROR: Cannot read collision pixels (${error.message})`);
-                // Allow movement when there's a CORS error
+                // console.log(`⚠️ Collision detection error: ${error.message}`);
+                return true; // Allow movement if collision detection fails
             }
         }
         
-        // Movement allowed - don't spam console
+        // If no collision map loaded, allow movement
         return true;
+    }
+    
+    rectIntersects(rect1, rect2) {
+        // Check if two rectangles intersect
+        return rect1.x < rect2.x + rect2.width &&
+               rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height &&
+               rect1.y + rect1.height > rect2.y;
     }
     
     isOnPath(x, y, x1, y1, x2, y2, width) {
@@ -1870,7 +2013,13 @@ class StartupQuest {
     }
 }
 
-// Start the game when page loads
+// Start the game when page is fully loaded (including all resources)
 window.addEventListener('load', () => {
-    new StartupQuest();
+    console.log(`🚀 Window loaded - DOM state: ${document.readyState}`);
+    
+    // Small delay to ensure everything is completely ready
+    setTimeout(() => {
+        console.log(`🎮 Creating StartupQuest instance...`);
+        new StartupQuest();
+    }, 100);
 }); 

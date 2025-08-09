@@ -1,20 +1,32 @@
 {
   "name": "axiom-startup-website",
   "version": "1.0.0",
-  "description": "Axiom Startup Competition Website",
+  "description": "Interactive game-like website for the Axiom Startup Competition",
   "main": "index.html",
+  "type": "commonjs",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'No build needed for static site'",
-    "start": "serve ."
+    "build": "node build.js",
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000"
   },
   "dependencies": {
     "nodemailer": "^6.9.8"
   },
-  "devDependencies": {
-    "vercel": "^33.0.1"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=18.0.0"
+  },
+  "keywords": [
+    "startup",
+    "competition",
+    "website",
+    "game",
+    "interactive"
+  ],
+  "author": "Axiom Startup",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "your-repo-url"
   }
 }

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule - Axiom</title>
+    <title>Schedule - Axiom Startups</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="form-page">
@@ -29,9 +30,6 @@
 
     <!-- Schedule Page with Custom Design -->
     <div class="schedule-page">
-        <div class="schedule-background">
-            <img src="schedualeimg.png" alt="Schedule Background" class="schedule-bg-image">
-        </div>
         
         <div class="schedule-container">
             <h1 class="schedule-title">Event Schedule</h1>
@@ -48,27 +46,37 @@
                 </div>
                 
                 <div class="schedule-item">
-                    <span class="schedule-time">5:30 PM:</span>
-                    <span class="schedule-desc">Main competition begins - 10 teams, big dreams</span>
+                    <span class="schedule-time">5:15 PM:</span>
+                    <span class="schedule-desc">Mentorship sessions</span>
+                </div>
+                
+                <div class="schedule-item">
+                    <span class="schedule-time">5:45 PM:</span>
+                    <span class="schedule-desc">Teams revise pitches</span>
+                </div>
+                
+                <div class="schedule-item">
+                    <span class="schedule-time">6:00 PM:</span>
+                    <span class="schedule-desc">Competition begins</span>
                 </div>
                 
                 <div class="schedule-item">
                     <span class="schedule-time">7:30 PM:</span>
-                    <span class="schedule-desc">Dinner break</span>
+                    <span class="schedule-desc">Dinner</span>
                 </div>
-                
-                <div class="schedule-item">
-                    <span class="schedule-time">8:00 PM:</span>
-                    <span class="schedule-desc">Winner is announced, closing remarks</span>
+
+                <div class="schedule-item ">
+                    <span class="schedule-time">8:15 PM</span>
+                    <span class="schedule-desc">Winners announced and closing remarks</span>
                 </div>
-                
-                <div class="schedule-item highlight">
+
+                <div class="schedule-item ">
                     <span class="schedule-time">8:30 PM+:</span>
-                    <span class="schedule-desc">AFTER PARTY! (ABSOLUTELY MANDATORY🔥!!!)</span>
+                    <span class="schedule-desc">After party on roof (Absolutley mandatory)</span>
                 </div>
             </div>
         </div>
-        </div>
+    </div>
     
     <!-- Dragon Sprite -->
     <div class="page-dragon"></div>
@@ -110,6 +118,7 @@
         function goBackToGame() {
             // Store the current page for portal positioning
             localStorage.setItem('returnFromPage', 'schedule.html');
+            // Always return to homepage, positioned near the portal they came from
             window.location.href = 'index.html';
         }
     </script>

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - Axiom Startup</title>
+    <title>About - Axiom Startups</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="form-page">
@@ -34,7 +35,13 @@
                 
                 <div class="about-text-container">
                     <div class="about-description">
-                        <p>Axiom is a startup competition where youth aged 15-19 will get a chance to pitch their insane startup ideas to a panel of experienced judges, receive actionable feedback, and compete for a monetary prize that can transform their vision into reality. There will be opportunities to connect with like-minded people (aka people who know that unicorns exist in the business world too). After the winner is announced, we will have a small after party on the roof!</p>
+                        <p>
+                            Axiom is a startup competition where ambitious youth get the chance to pitch their insane startup ideas to a panel of experienced judges. Participants receive actionable feedback and compete for a cash prize that can help turn their vision into reality.
+                            This event was created to give ambitious youth the opportunity to connect with experts across fields—especially tech, AI, entrepreneurship, software development, and startup leadership.
+                            Before the pitches, there will be some for participants to connect directly with 15–20 mentors—professionals offering guidance and support.
+                            There will also be plenty of opportunities to connect with like-minded peers(aka people who know unicorns really do exist in the business world)
+                            After the winner is announced, there will be a small rooftop gathering to celebrate.
+                            </p>
                     </div>
                     
                     <div class="about-sections">
@@ -93,6 +100,7 @@
         function goBackToGame() {
             // Store the current page for portal positioning
             localStorage.setItem('returnFromPage', 'about.html');
+            // Always return to homepage, positioned near the portal they came from
             window.location.href = 'index.html';
         }
     </script>

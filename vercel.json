@@ -1,13 +1,4 @@
 {
-  "functions": {
-    "api/submit-application.js": {
-      "maxDuration": 30
-    },
-    "api/submit-contact.js": {
-      "maxDuration": 30
-    }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": "public"
 }

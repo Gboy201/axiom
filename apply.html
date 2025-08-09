@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apply - Axiom Startup</title>
+    <title>Apply - Axiom Startups</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -30,7 +31,7 @@
 
     <div id="page-container">
         <div id="apply-content">
-            <h1>Axiom Startup Competition Application Form</h1>
+            <h1>Axiom Competition Application Form</h1>
             <p style="color: #ff6b6b; font-weight: bold; margin-bottom: 30px;">PLEASE MAKE UR RESPONSES INTERESTING AND USE YOUR BRAIN. WE CAN SENSE CHAT GPT.</p>
             
             <div id="form-container">
@@ -47,7 +48,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="age">What will your age be at the startup of September, 2025? <span class="required">*</span></label>
+                        <label for="age">What will your age be at the start of September, 2025? <span class="required">*</span></label>
                         <input type="number" id="age" name="age" min="13" max="100" required>
                     </div>
 
@@ -200,7 +201,18 @@
                     body: JSON.stringify(data)
                 });
                 
-                const result = await response.json();
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                let result;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    // Handle non-JSON responses (error pages, etc.)
+                    const textResponse = await response.text();
+                    console.error('Non-JSON response received:', textResponse);
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
                 
                 if (response.ok && result.success) {
                     // Success - redirect to thank you page
@@ -258,6 +270,7 @@
         function goBackToGame() {
             // Store the current page for portal positioning
             localStorage.setItem('returnFromPage', 'apply.html');
+            // Always return to homepage, positioned near the portal they came from
             window.location.href = 'index.html';
         }
     </script>

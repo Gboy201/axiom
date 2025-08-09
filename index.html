@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body class="game-page">
     <!-- Navigation Bar -->
@@ -82,6 +83,25 @@
 
     </div>
 
+    <!-- Scroll Footer -->
+    <div id="scroll-footer">
+        <div class="footer-section">
+            <span class="footer-label">Follow Us:</span>
+            <div class="footer-links">
+                <a href="https://www.instagram.com/axiomstartups?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="footer-link" title="Instagram"><i class="fa fa-instagram"></i></a>
+                <a href="https://www.linkedin.com/company/axiom-startups/?viewAsMember=true" target="_blank" class="footer-link" title="LinkedIn"><i class="fa fa-linkedin-square"></i></a>
+            </div>
+        </div>
+        <div class="footer-separator"></div>
+        <div class="footer-section">
+            <span class="footer-label">Contact:</span>
+            <div class="footer-links">
+                <a href="mailto:hello@axiomstartups.com" class="footer-link" title="Email Us"><i class="fa fa-envelope"></i></a>
+                <a href="contact.html" class="footer-link" title="Contact Form"><i class="fa fa-file-text"></i></a>
+            </div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
     
     <!-- Hamburger Menu JavaScript -->
@@ -111,6 +131,18 @@
                     navRight.classList.remove('active');
                 }
             });
+        });
+
+        // Scroll footer functionality
+        const scrollFooter = document.getElementById('scroll-footer');
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 100) {
+                scrollFooter.classList.add('visible');
+            } else {
+                scrollFooter.classList.remove('visible');
+            }
         });
     </script>
 </body>

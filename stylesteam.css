@@ -2302,4 +2302,14 @@ body.form-page {
     .sponsors-text p {
         font-size: 14px;
     }
-} 
+}
+
+/* Ensure team page has enough content height to trigger scroll */
+#team-content {
+    min-height: calc(100vh + 200px);
+    padding-bottom: 150px;
+}
+
+/* Footer will follow normal scroll behavior */
+
+ 

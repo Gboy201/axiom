@@ -2310,9 +2310,6 @@ body.form-page {
     padding-bottom: 150px;
 }
 
-/* Force footer to always show on team page */
-#scroll-footer {
-    bottom: 0 !important;
-}
+/* Footer will follow normal scroll behavior */
 
  

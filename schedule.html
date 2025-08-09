@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule - Axiom Startups</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbit:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body class="form-page">
     <!-- Navigation Bar -->
@@ -72,7 +76,7 @@
 
                 <div class="schedule-item ">
                     <span class="schedule-time">8:30 PM+:</span>
-                    <span class="schedule-desc">After party on roof (Absolutley mandatory)</span>
+                    <span class="schedule-desc">After party on roof (Absolutely mandatory)</span>
                 </div>
             </div>
         </div>
@@ -80,6 +84,25 @@
     
     <!-- Dragon Sprite -->
     <div class="page-dragon"></div>
+    
+    <!-- Scroll Footer -->
+    <div id="scroll-footer">
+        <div class="footer-section">
+            <span class="footer-label">Follow Us:</span>
+            <div class="footer-links">
+                <a href="https://www.instagram.com/axiomstartups?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="footer-link" title="Instagram"><i class="fa fa-instagram"></i></a>
+                <a href="https://www.linkedin.com/company/axiom-startups/?viewAsMember=true" target="_blank" class="footer-link" title="LinkedIn"><i class="fa fa-linkedin-square"></i></a>
+            </div>
+        </div>
+        <div class="footer-separator"></div>
+        <div class="footer-section">
+            <span class="footer-label">Contact:</span>
+            <div class="footer-links">
+                <a href="mailto:hello@axiomstartups.com" class="footer-link" title="Email Us"><i class="fa fa-envelope"></i></a>
+                <a href="contact.html" class="footer-link" title="Contact Form"><i class="fa fa-file-text"></i></a>
+            </div>
+        </div>
+    </div>
     
     <!-- Go Back Button -->
     <div class="go-back-container">
@@ -121,6 +144,18 @@
             // Always return to homepage, positioned near the portal they came from
             window.location.href = 'index.html';
         }
+
+        // Scroll footer functionality
+        const scrollFooter = document.getElementById('scroll-footer');
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 100) {
+                scrollFooter.classList.add('visible');
+            } else {
+                scrollFooter.classList.remove('visible');
+            }
+        });
     </script>
 </body>
 </html> 
